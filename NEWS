@@ -2,6 +2,9 @@
 Next Version
 ================
 
+  o tar_element: Allow generation of a sha1, sha256, sha512 and/or md5 checksum along with
+    tarball
+
 ===================
 bst-external 0.16.0
 ===================

@@ -39,8 +39,15 @@ The tarball_element default configuration:
 
 import tarfile
 import os
+import hashlib
 
 from buildstream import Element, Scope, ElementError
+
+# Block size for reading tarball when hashing
+BLOCKSIZE = 65536
+
+# Permitted checksums
+CHECKSUMS = set(['sha1', 'sha256', 'sha512', 'md5'])
 
 class TarElement(Element):
 
@@ -57,21 +64,28 @@ class TarElement(Element):
 
     def configure(self, node):
         self.node_validate(node, [
-            'filename', 'compression'
+            'filename', 'compression', 'include-checksums'
         ])
         self.filename = self.node_subst_member(node, 'filename')
         self.compression = self.node_get_member(node, str, 'compression')
+        self.include_checksums = self.node_get_member(node, list,
+                'include-checksums', [])
 
         if self.compression not in ['none', 'gzip', 'xz', 'bzip2']:
             raise ElementError("{}: Invalid compression option {}".format(self, self.compression))
 
     def preflight(self):
-        pass
+        checksums_set = set(self.include_checksums)
+        if not checksums_set.issubset(CHECKSUMS):
+            unsupported = list(checksums_set - CHECKSUMS)
+            raise ElementError("{}: Unsupported checksum(s) {}".format(self,
+                ', '.join(unsupported)))
 
     def get_unique_key(self):
         key = {}
         key['filename'] = self.filename
         key['compression'] = self.compression
+        key['include-checksums'] = self.include_checksums
         return key
 
     def configure_sandbox(self, sandbox):
@@ -101,6 +115,32 @@ class TarElement(Element):
             with tarfile.TarFile.open(name=tarname, mode=mode) as tar:
                 for f in os.listdir(inputdir):
                     tar.add(os.path.join(inputdir, f), arcname=f)
+
+            if self.include_checksums:
+                hash_map = {'sha1': hashlib.sha1, 'sha256': hashlib.sha256,
+                        'sha512': hashlib.sha512, 'md5': hashlib.md5}
+
+                # We use the path of the final checksum as a unique ID for the
+                # hashes themselves to simplify data structure at the expense of
+                # readability
+                hashes = {}
+                for hash_type in self.include_checksums:
+                    hash_path = os.path.join(outputdir, self.filename +
+                            '.{}sum'.format(hash_type))
+                    hashes[hash_path] = hash_map[hash_type]()
+
+                with open(tarname, 'rb') as f:
+                    while True:
+                        buf = f.read(BLOCKSIZE)
+                        if not buf:
+                            break
+                        for path in hashes.keys():
+                            hashes[path].update(buf)
+
+                for path in hashes.keys():
+                    with open(path, 'w') as hash_file:
+                        hash_file.write(hashes[path].hexdigest())
+
 
         return '/output'
 
