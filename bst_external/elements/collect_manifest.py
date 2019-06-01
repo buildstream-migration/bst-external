@@ -47,7 +47,7 @@ The manifest file is exported as a json file to the path provided
 under the "path" variable defined in the .bst file.
 """
 
-def get_version(sources):
+def get_version(sources, version_regex):
     """
     This function attempts to extract the source version
     from a dependency. This data can generally be found
@@ -59,12 +59,12 @@ def get_version(sources):
         if source.get_kind() in ['tar', 'zip']:
             url = source.url
             filename = url.rpartition('/')[2]
-            match = re.search(r'(\d+\.\d+(?:\.\d+)?)', filename)
+            match = re.search(version_regex, filename)
             if match:
                 return match.groups()[-1]
         elif source.get_kind() in ['git', 'git_tag']:
             ref = source.mirror.ref
-            match = re.search(r'(\d+\.\d+(?:\.\d+)?)', ref)
+            match = re.search(version_regex, ref)
             if match:
                 return match.groups()[-1]
 
@@ -144,8 +144,10 @@ class CollectManifestElement(Element):
         if 'product' not in cpe:
             cpe['product'] = os.path.basename(os.path.splitext(dep.name)[0])
 
+        version_regex = cpe.get('version_regex', r'(\d+\.\d+(?:\.\d+)?)')
+
         if 'version' not in cpe:
-            version = get_version(sources)
+            version = get_version(sources, version_regex)
 
             if version is None:
                 self.status('Missing version to {}. Please add variable "manifest-version"'.format(dep))
