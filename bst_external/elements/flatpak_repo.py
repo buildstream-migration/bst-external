@@ -46,9 +46,18 @@ class FlatpakRepoElement(ScriptElement):
         self.set_work_dir()
         self.set_root_read_only(True)
 
-        repo_mode = self.node_subst_member(node, 'repo-mode')
+        self._repo_mode = self.node_subst_member(node, 'repo-mode')
         self.set_install_root('/buildstream/repo')
-        self.add_commands('init repository', ['ostree init --repo=/buildstream/repo --mode={}'.format(repo_mode)])
+        self.add_commands('init repository', ['ostree init --repo=/buildstream/repo --mode={}'.format(self._repo_mode)])
+
+    def get_unique_key(self):
+        return {
+            "environment": self._env,
+            "copy-refs": self._copy_refs,
+            "arch": self._arch,
+            "branch": self._branch,
+            "repo_mode": self._repo_mode,
+        }
 
     def _layout_flatpaks(self, elements):
         def staging_dir(elt):
