@@ -55,6 +55,9 @@ class TarElement(Element):
     # remote sources
     BST_FORBID_SOURCES = True
 
+    # Bump whenever new config is added
+    BST_FORMAT_VERSION = 1
+
     def configure(self, node):
         self.node_validate(node, [
             'filename', 'compression', 'include', 'exclude', 'include-orphans'
