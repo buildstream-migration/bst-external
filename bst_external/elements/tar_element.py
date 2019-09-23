@@ -57,10 +57,14 @@ class TarElement(Element):
 
     def configure(self, node):
         self.node_validate(node, [
-            'filename', 'compression'
+            'filename', 'compression', 'include', 'exclude', 'include-orphans'
         ])
         self.filename = self.node_subst_member(node, 'filename')
         self.compression = self.node_get_member(node, str, 'compression')
+
+        self.include = self.node_get_member(node, list, 'include')
+        self.exclude = self.node_get_member(node, list, 'exclude')
+        self.include_orphans = self.node_get_member(node, bool, 'include-orphans')
 
         if self.compression not in ['none', 'gzip', 'xz', 'bzip2']:
             raise ElementError("{}: Invalid compression option {}".format(self, self.compression))
@@ -72,6 +76,10 @@ class TarElement(Element):
         key = {}
         key['filename'] = self.filename
         key['compression'] = self.compression
+        key['include'] = self.include
+        key['exclude'] = self.exclude
+        key['include-orphans'] = self.include_orphans
+
         return key
 
     def configure_sandbox(self, sandbox):
@@ -89,7 +97,8 @@ class TarElement(Element):
 
         # Stage deps in the sandbox root
         with self.timed_activity('Staging dependencies', silent_nested=True):
-            self.stage_dependency_artifacts(sandbox, Scope.BUILD, path='/input')
+            self.stage_dependency_artifacts(sandbox, Scope.BUILD, path='/input',
+                                            include=self.include, exclude=self.exclude, orphans=self.include_orphans)
 
         with self.timed_activity('Creating tarball', silent_nested=True):
 
