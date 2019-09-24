@@ -1,8 +1,10 @@
 kind: tar_element
 
 depends:
-- filename: hello-import.bst
+- filename: tar/hello-import.bst
   type: build
 
 config:
   filename: hello
+  include:
+  - hello
