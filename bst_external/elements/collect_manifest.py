@@ -123,7 +123,8 @@ class CollectManifestElement(Element):
 
     def get_unique_key(self):
         key = {
-            'path': self.path
+            'path': self.path,
+            'version': self.BST_FORMAT_VERSION
         }
         return key
 
@@ -213,10 +214,6 @@ class CollectManifestElement(Element):
 
         self.set_public_data('cpe-manifest', manifest)
         return os.path.sep
-
-    def get_unique_key(self):
-        return self.BST_FORMAT_VERSION
-
 
 def setup():
     return CollectManifestElement
