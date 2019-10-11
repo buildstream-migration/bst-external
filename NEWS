@@ -3,6 +3,16 @@ Next Version
 ================
 
 ===================
+bst-external 0.19.0
+===================
+
+o oci: Multiple fixes
+o git_tag: Add tests
+o git_tag: Fix relative urls #40
+o collect_manifest: Fix cache key ignoring path of manifest
+o collect_manifest: Add support for custom regexp to extract versions
+
+===================
 bst-external 0.18.0
 ===================
 
