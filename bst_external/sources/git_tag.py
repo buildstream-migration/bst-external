@@ -687,7 +687,7 @@ class GitTagSource(Source):
             ref = self.mirror.submodule_ref(path)
             if ref is not None:
                 if url.startswith("./") or url.startswith("../"):
-                    url = urljoin(self.mirror.url, url)
+                    url = urljoin("{}/".format(self.mirror.url), url)
                 mirror = GitTagMirror(self, path, url, ref)
                 submodules.append(mirror)
 
