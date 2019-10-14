@@ -3,6 +3,12 @@ Next Version
 ================
 
 ===================
+bst-external 0.19.1
+===================
+
+o git_tag: Fix submodule relative URLs when main URL does not end with /
+
+===================
 bst-external 0.19.0
 ===================
 
