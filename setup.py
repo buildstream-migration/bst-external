@@ -36,6 +36,7 @@ setup(name='BuildStream-external',
       packages=find_packages(exclude=['tests', 'tests.*']),
       include_package_data=True,
       install_requires=[
+          'pygobject',
           'pytoml',
           'requests',
           'setuptools'
