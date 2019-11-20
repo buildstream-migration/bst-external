@@ -220,7 +220,7 @@ class CollectManifestElement(Element):
                 if version_match is None:
                     self.status('Missing version to {}.'.format(dep))
                 else:
-                    raise ElementError('{}: {}: version match string "{}" did not match anything.'.format(self, dep, cpe.get('version-match')))
+                    raise ElementError('{}: {}: version match string "{}" did not match anything.'.format(self, dep, version_match))
 
             if version:
                 cpe['version'] = version
