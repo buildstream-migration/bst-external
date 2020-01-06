@@ -66,7 +66,7 @@ class Git(Repo):
 
     def source_config(self, ref=None, checkout_submodules=None):
         config = {
-            'kind': 'git',
+            'kind': 'git_tag',
             'url': 'file://' + self.repo,
             'track': 'master'
         }
