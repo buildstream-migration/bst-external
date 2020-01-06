@@ -546,7 +546,7 @@ class GitTagMirror(SourceFetcher):
 class GitTagSource(Source):
     # pylint: disable=attribute-defined-outside-init
 
-    BST_FORMAT_VERSION = 1
+    BST_FORMAT_VERSION = 2
 
     def configure(self, node):
         ref = self.node_get_member(node, str, 'ref', '') or None
