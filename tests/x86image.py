@@ -10,8 +10,12 @@ DATA_DIR = os.path.join(
     "project"
 )
 
+
+# This test is very slow and the plugin is not used very much
+# The test is now taking more than 3hrs and so is blocking other
+# more acitvely used plugins development
 @pytest.mark.datafiles(DATA_DIR)
-def test_x86image_run(cli, datafiles):
+def old_test_x86image_run(cli, datafiles):
     project = str(datafiles)
     checkout = os.path.join(cli.directory, 'x86image_checkout')
     img_path = os.path.join(checkout, 'sda.img')

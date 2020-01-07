@@ -1,4 +1,4 @@
-image: buildstream/buildstream:latest-master-52125390
+image: buildstream/buildstream:latest-master-85126764
 
 cache:
   paths:
