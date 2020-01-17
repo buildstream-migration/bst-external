@@ -59,5 +59,10 @@ class BazelElement(BuildElement):
         #
         sandbox.mark_directory("/bazel-home")
 
+        # Bazel requires the presence of /dev/shm, but bst does not
+        # create this in the sandbox at the moment.
+        #
+        sandbox.mark_directory("/dev/shm")
+
 def setup():
     return BazelElement
