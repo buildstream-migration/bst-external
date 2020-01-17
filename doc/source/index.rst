@@ -16,6 +16,7 @@ bst-external package and enabled it in your `project configuration file
    :maxdepth: 1
    :caption: Contained Elements
 
+   elements/bazel_build
    elements/dpkg_build
    elements/dpkg_deploy
    elements/x86image
@@ -32,6 +33,7 @@ bst-external package and enabled it in your `project configuration file
    :maxdepth: 1
    :caption: Contained Sources
 
+   sources/bazel_source
    sources/cargo
    sources/docker
    sources/quilt

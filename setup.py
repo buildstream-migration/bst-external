@@ -47,8 +47,10 @@ setup(name='BuildStream-external',
       },
       entry_points={
           'buildstream.plugins': [
+              'bazel_source = bst_external.sources.bazel_source',
               'cargo = bst_external.sources.cargo',
               'docker = bst_external.sources.docker',
+              'bazel_build = bst_external.elements.bazel_build',
               'dpkg_build = bst_external.elements.dpkg_build',
               'dpkg_deploy = bst_external.elements.dpkg_deploy',
               'flatpak_image = bst_external.elements.flatpak_image',
@@ -61,7 +63,7 @@ setup(name='BuildStream-external',
               'git_tag = bst_external.sources.git_tag',
               'quilt = bst_external.sources.quilt',
               'tar_element = bst_external.elements.tar_element',
-              'oci = bst_external.elements.oci'
+              'oci = bst_external.elements.oci',
           ]
       },
       setup_requires=['pytest-runner', 'setuptools_scm'],
