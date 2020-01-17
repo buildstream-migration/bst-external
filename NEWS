@@ -2,6 +2,8 @@
 Next Version
 ================
 
+o Add bazel_build, bazel_source plugins
+
 ===================
 bst-external 0.19.1
 ===================
