@@ -3,6 +3,17 @@ Next Version
 ================
 
 ===================
+bst-external 0.20.0
+===================
+
+o cargo: Fix when using alias in url
+o git_tag: Add git lfs support
+o Fix tests to use git_tag plugin
+o x86image: Remove test
+o collect_manifest: Fix potential missing information in error message
+o collect_integration: Order the "ignore" items
+
+===================
 bst-external 0.19.1
 ===================
 
