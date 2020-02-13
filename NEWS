@@ -2,6 +2,8 @@
 Next Version
 ================
 
+o Add a local plugin that is sutible for files no tracked by a projects VCS.
+
 ===================
 bst-external 0.20.0
 ===================
