@@ -442,7 +442,8 @@ class GitTagMirror(SourceFetcher):
 
     def init_workspace(self, directory):
         fullpath = os.path.join(directory, self.path)
-        url = self.source.translate_url(self.url)
+        url = self.source.translate_url(self.url,
+                                        primary=self.primary)
 
         self.source.call([self.source.host_git, 'clone', '--no-checkout', self.mirror, fullpath],
                          fail="Failed to clone git mirror {} in directory: {}".format(self.mirror, fullpath),
