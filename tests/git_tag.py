@@ -80,7 +80,11 @@ def test_gitlfs(cli, tmpdir, datafiles):
 ## version of git-lfs
 @pytest.mark.skipif(HAVE_GIT is False, reason="git is not available")
 @pytest.mark.datafiles(os.path.join(DATA_DIR, 'lfs'))
-def test_gitlfs_off(cli, tmpdir, datafiles):
+@pytest.mark.parametrize(
+    "Explicit",
+    [True, False],
+)
+def test_gitlfs_off(cli, tmpdir, datafiles, Explicit):
     project = os.path.join(datafiles.dirname, datafiles.basename)
     checkoutdir = os.path.join(str(tmpdir), "checkout")
 
@@ -89,9 +93,11 @@ def test_gitlfs_off(cli, tmpdir, datafiles):
         'sources': [
             {'kind': 'git_tag', 'url': 'https://gitlab.com/buildstream/testing/test-lfs-repo',
              'track': 'master', 'ref': '85b163a6252154d93c3f3320e95866b598c07835',
-             'use-lfs': False}
+            }
         ]
     }
+    if Explicit:
+        element['sources'][0]['use-lfs'] = False
     _yaml.dump(element, os.path.join(project, 'target.bst'))
 
     result = cli.run(project=project, args=[
@@ -127,6 +133,11 @@ def test_gitlfs_notset(cli, tmpdir, datafiles):
         ]
     }
     _yaml.dump(element, os.path.join(project, 'target.bst'))
+
+    with open(os.path.join(project, 'project.conf'), "a+") as fl:
+        fl.write("""fatal-warnings:
+  - git_tag:unused-lfs
+""")
 
     result = cli.run(project=project, args=[
         'fetch', 'target.bst'
