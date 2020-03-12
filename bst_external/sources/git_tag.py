@@ -432,8 +432,8 @@ class GitTagMirror(SourceFetcher):
             self.set_origin_url(directory)
         
         ## This turns git-lfs off if it is installed but we dont want to use it.
-        my_env = os.environ
-        if self.source.use_lfs == False:
+        my_env = os.environ.copy()
+        if not self.source.use_lfs:
             my_env['GIT_LFS_SKIP_SMUDGE'] = 'TRUE'
         self.source.call([self.source.host_git, 'checkout', '--force', self.ref],
                          fail="Failed to checkout git ref {}".format(self.ref),
@@ -454,8 +454,8 @@ class GitTagMirror(SourceFetcher):
                          cwd=fullpath)
 
         ## This turns git-lfs off if it is installed but we dont want to use it.
-        my_env = os.environ
-        if self.source.use_lfs == False:
+        my_env = os.environ.copy()
+        if not self.source.use_lfs:
             my_env['GIT_LFS_SKIP_SMUDGE'] = 'TRUE'
         self.source.call([self.source.host_git, 'checkout', '--force', self.ref],
                          fail="Failed to checkout git ref {}".format(self.ref),
