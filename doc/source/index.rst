@@ -23,6 +23,7 @@ bst-external package and enabled it in your `project configuration file
    elements/flatpak_repo
    elements/collect_integration
    elements/collect_manifest
+   elements/url_manifest
    elements/fastboot_bootimg
    elements/fastboot_ext4
    elements/tar_element
