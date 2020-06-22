@@ -417,12 +417,12 @@ class OciElement(Element):
                         'Test', 'Interval',
                         'Timeout', 'Retries'
                     ])
-                    config['Healthcheck'] = {}
+                    config_value['Healthcheck'] = {}
                     if 'Test' in healthcheck:
-                        config['Healthcheck']['Test'] = self.node_subst_list(healthcheck, 'Test')
+                        config_value['Healthcheck']['Test'] = self.node_subst_list(healthcheck, 'Test')
                     for member in ['Interval', 'Timeout', 'Retries']:
                         if member in healthcheck:
-                            config['Healthcheck'][member] = int(self.node_subst_member(healthcheck, member))
+                            config_value['Healthcheck'][member] = int(self.node_subst_member(healthcheck, member))
 
                 image_value['config'] = config_value
             if 'annotations' in image:
