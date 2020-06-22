@@ -408,7 +408,7 @@ class OciElement(Element):
                 if 'Labels' in config:
                     labels = self.node_get_member(config, Mapping, 'Labels')
                     config_value['Labels'] = {}
-                    for k, v in self.node_items(config, labels):
+                    for k, v in self.node_items(labels):
                         config_value['Labels'][k] = v
 
                 if 'Healthcheck' in config:
@@ -429,7 +429,7 @@ class OciElement(Element):
                 image_value['annotations'] = {}
                 annotations = \
                     self.node_get_member(image, Mapping, 'annotations')
-                for k, _ in self.node_items(config, annotations):
+                for k, _ in self.node_items(annotations):
                     v = self.node_subst_member(annotations, k)
                     image_value['annotations'][k] = v
 
