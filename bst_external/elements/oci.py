@@ -158,7 +158,7 @@ OCI specific:
 ::
 
   Labels: {"a": "b"}
-  StopSignals: "SIGKILL"
+  StopSignal: "SIGKILL"
 
 Docker specific:
 
@@ -383,7 +383,7 @@ class OciElement(Element):
                     'CpuShares', 'Healthcheck',
                 ]
                 oci_config = [
-                    'Labels', 'StopSignals'
+                    'Labels', 'StopSignal'
                 ]
 
                 self.node_validate(config, common_config + (docker_config if self.mode == 'docker' else oci_config))
