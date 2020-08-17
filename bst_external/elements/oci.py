@@ -158,7 +158,7 @@ OCI specific:
 ::
 
   Labels: {"a": "b"}
-  StopSignals: "SIGKILL"
+  StopSignal: "SIGKILL"
 
 Docker specific:
 
@@ -167,7 +167,7 @@ Docker specific:
   Memory: 2048
   MemorySwap: 4096
   CpuShares: 2
-  Heathcheck:
+  Healthcheck:
     Test: ["CMD", "/bin/test", "param"]
     Interval: 50000000000
     Timeout: 10000000000
@@ -383,7 +383,7 @@ class OciElement(Element):
                     'CpuShares', 'Healthcheck',
                 ]
                 oci_config = [
-                    'Labels', 'StopSignals'
+                    'Labels', 'StopSignal'
                 ]
 
                 self.node_validate(config, common_config + (docker_config if self.mode == 'docker' else oci_config))
@@ -408,7 +408,7 @@ class OciElement(Element):
                 if 'Labels' in config:
                     labels = self.node_get_member(config, Mapping, 'Labels')
                     config_value['Labels'] = {}
-                    for k, v in self.node_items(config, labels):
+                    for k, v in self.node_items(labels):
                         config_value['Labels'][k] = v
 
                 if 'Healthcheck' in config:
@@ -417,19 +417,19 @@ class OciElement(Element):
                         'Test', 'Interval',
                         'Timeout', 'Retries'
                     ])
-                    config['Healthcheck'] = {}
+                    config_value['Healthcheck'] = {}
                     if 'Test' in healthcheck:
-                        config['Healthcheck']['Test'] = self.node_subst_list(healthcheck, 'Test')
+                        config_value['Healthcheck']['Test'] = self.node_subst_list(healthcheck, 'Test')
                     for member in ['Interval', 'Timeout', 'Retries']:
                         if member in healthcheck:
-                            config['Healthcheck'][member] = int(self.node_subst_member(healthcheck, member))
+                            config_value['Healthcheck'][member] = int(self.node_subst_member(healthcheck, member))
 
                 image_value['config'] = config_value
             if 'annotations' in image:
                 image_value['annotations'] = {}
                 annotations = \
                     self.node_get_member(image, Mapping, 'annotations')
-                for k, _ in self.node_items(config, annotations):
+                for k, _ in self.node_items(annotations):
                     v = self.node_subst_member(annotations, k)
                     image_value['annotations'][k] = v
 
