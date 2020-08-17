@@ -408,7 +408,7 @@ class OciElement(Element):
                 if 'Labels' in config:
                     labels = self.node_get_member(config, Mapping, 'Labels')
                     config_value['Labels'] = {}
-                    for k, v in self.node_items(config, labels):
+                    for k, v in self.node_items(labels):
                         config_value['Labels'][k] = v
 
                 if 'Healthcheck' in config:
