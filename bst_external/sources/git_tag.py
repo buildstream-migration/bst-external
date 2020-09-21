@@ -544,55 +544,29 @@ class GitTagMirror(SourceFetcher):
                          fail="Failed to set origin url {}".format(origin_url),
                          cwd=fullpath)
 
-class GitTagSource(Source):
+class AbstractGitTagSource(Source):
     # pylint: disable=attribute-defined-outside-init
 
-    BST_FORMAT_VERSION = 2
-
     def configure(self, node):
-        ref = self.node_get_member(node, str, 'ref', '') or None
+        config_keys = ['url', 'ref', 'submodules', 'full-clone', 'use-lfs']
+        config_keys.extend(self.get_extra_config_keys())
+        config_keys.extend(Source.COMMON_CONFIG_KEYS)
 
-        config_keys = ['url', 'track', 'track-tags', 'track-extra', 'ref', 'submodules', 'checkout-submodules', 'match', 'exclude', 'full-clone', 'use-lfs']
-        self.node_validate(node, config_keys + Source.COMMON_CONFIG_KEYS)
+        self.node_validate(node, config_keys)
 
         self.original_url = self.node_get_member(node, str, 'url')
         self.full_clone = self.node_get_member(node, bool, 'full-clone', False)
-        self.mirror = GitTagMirror(self, '', self.original_url, ref, primary=True, full_clone=self.full_clone)
-        self.tracking = self.node_get_member(node, str, 'track', None)
-        self.track_extra = self.node_get_member(node, list, 'track-extra', default=[])
-        self.track_tags = self.node_get_member(node, bool, 'track-tags', False)
         self.use_lfs = self.node_get_member(node, bool, 'use-lfs', None)
-        self.match = self.node_get_member(node, list, 'match', [])
-        self.exclude = self.node_get_member(node, list, 'exclude', [])
 
-        # At this point we now know if the source has a ref and/or a track.
-        # If it is missing both then we will be unable to track or build.
-        if self.mirror.ref is None and self.tracking is None:
-            raise SourceError("{}: Git sources require a ref and/or track".format(self),
-                              reason="missing-track-and-ref")
-
-        self.checkout_submodules = self.node_get_member(node, bool, 'checkout-submodules', True)
-        self.submodules = []
-
-        # Parse a dict of submodule overrides, stored in the submodule_overrides
-        # and submodule_checkout_overrides dictionaries.
-        self.submodule_overrides = {}
-        self.submodule_checkout_overrides = {}
-        modules = self.node_get_member(node, Mapping, 'submodules', {})
-        for path, _ in self.node_items(modules):
-            submodule = self.node_get_member(modules, Mapping, path)
-            url = self.node_get_member(submodule, str, 'url', '') or None
-
-            # Make sure to mark all URLs that are specified in the configuration
-            if url:
-                self.mark_download_url(url, primary=False)
-
-            self.submodule_overrides[path] = url
-            if 'checkout' in submodule:
-                checkout = self.node_get_member(submodule, bool, 'checkout')
-                self.submodule_checkout_overrides[path] = checkout
+        self.extra_configure(node)
 
         self.mark_download_url(self.original_url)
+
+    def extra_configure(self, node):
+        pass
+
+    def get_extra_config_keys(self):
+        return []
 
     def preflight(self):
         # Check if git is installed, get the binary at the same time
@@ -607,23 +581,15 @@ class GitTagSource(Source):
         # from another location, it should not effect the cache key.
         key = [self.original_url, self.mirror.ref]
 
-        # Only modify the cache key with checkout_submodules if it's something
-        # other than the default behaviour.
-        if self.checkout_submodules is False:
-            key.append({"checkout_submodules": self.checkout_submodules})
-
-        # We want the cache key to change if the source was
-        # configured differently, and submodules count.
-        if self.submodule_overrides:
-            key.append(self.submodule_overrides)
-
-        if self.submodule_checkout_overrides:
-            key.append({"submodule_checkout_overrides": self.submodule_checkout_overrides})
+        key.extend(self.get_extra_unique_key())
 
         if self.use_lfs:
             key.append("use-lfs")
 
         return key
+
+    def get_extra_unique_key(self):
+        return []
 
     def get_consistency(self):
         if self.have_all_refs():
@@ -631,6 +597,25 @@ class GitTagSource(Source):
         elif self.mirror.ref is not None:
             return Consistency.RESOLVED
         return Consistency.INCONSISTENT
+
+    def init_workspace(self, directory):
+        # XXX: may wish to refactor this as some code dupe with stage()
+        self.mirror.ensure_trackable()
+
+        with self.timed_activity('Setting up workspace "{}"'.format(directory), silent_nested=True):
+            self.mirror.init_workspace(directory)
+            self.extra_init_workspace(directory)
+
+    def extra_init_workspace(self, directory):
+        pass
+
+    def stage(self, directory):
+        with self.timed_activity("Staging {}".format(self.mirror.url), silent_nested=True):
+            self.mirror.stage(directory)
+            self.extra_stage(directory)
+
+    def extra_stage(self, directory):
+        pass
 
     def load_ref(self, node):
         ref = self.node_get_member(node, str, 'ref', None)
@@ -676,17 +661,115 @@ class GitTagSource(Source):
 
         return ret
 
-    def init_workspace(self, directory):
-        # XXX: may wish to refactor this as some code dupe with stage()
-        self.mirror.ensure_trackable()
+    def have_all_refs(self):
+        if not self.mirror.has_ref():
+            return False
+
+        return self.have_all_extra_refs()
+
+    def have_all_extra_refs(self):
+        return True
+
+
+class GitTagSource(AbstractGitTagSource):
+    # pylint: disable=attribute-defined-outside-init
+
+    BST_FORMAT_VERSION = 2
+
+    def get_extra_config_keys(self):
+        return ['track', 'track-extra', 'track-tags', 'match', 'exclude', 'checkout-submodules']
+
+    def extra_configure(self, node):
+        ref = self.node_get_member(node, str, 'ref', '') or None
+
+        self.tracking = self.node_get_member(node, str, 'track', None)
+        self.track_extra = self.node_get_member(node, list, 'track-extra', default=[])
+        self.track_tags = self.node_get_member(node, bool, 'track-tags', False)
+        self.match = self.node_get_member(node, list, 'match', [])
+        self.exclude = self.node_get_member(node, list, 'exclude', [])
+        self.checkout_submodules = self.node_get_member(node, bool, 'checkout-submodules', True)
+        self.submodules = []
+
+        # Parse a dict of submodule overrides, stored in the submodule_overrides
+        # and submodule_checkout_overrides dictionaries.
+        self.submodule_overrides = {}
+        self.submodule_checkout_overrides = {}
+        modules = self.node_get_member(node, Mapping, 'submodules', {})
+        for path, _ in self.node_items(modules):
+            submodule = self.node_get_member(modules, Mapping, path)
+            url = self.node_get_member(submodule, str, 'url', '') or None
+
+            # Make sure to mark all URLs that are specified in the configuration
+            if url:
+                self.mark_download_url(url, primary=False)
+
+            self.submodule_overrides[path] = url
+            if 'checkout' in submodule:
+                checkout = self.node_get_member(submodule, bool, 'checkout')
+                self.submodule_checkout_overrides[path] = checkout
+
+        self.mirror = GitTagMirror(self, '', self.original_url, ref, primary=True, full_clone=self.full_clone)
+
+        # At this point we now know if the source has a ref and/or a track.
+        # If it is missing both then we will be unable to track or build.
+        if self.mirror.ref is None and self.tracking is None:
+            raise SourceError("{}: Git sources require a ref and/or track".format(self),
+                              reason="missing-track-and-ref")
+
+    def get_extra_unique_key(self):
+        key = []
+
+        # We want the cache key to change if the source was
+        # configured differently, and submodules count.
+        if self.submodule_overrides:
+            key.append(self.submodule_overrides)
+
+        if self.submodule_checkout_overrides:
+            key.append({"submodule_checkout_overrides": self.submodule_checkout_overrides})
+
+        return key
+
+
+    def track(self):
+
+        # If self.tracking is not specified it's not an error, just silently return
+        if not self.tracking:
+            return None
+
+        # Resolve the URL for the message
+        resolved_url = self.translate_url(self.mirror.url)
+        with self.timed_activity("Tracking {} from {}"
+                                 .format(self.tracking, resolved_url),
+                                 silent_nested=True):
+            self.mirror.ensure_trackable()
+            self.mirror._fetch()
+
+            track_args = []
+            for pattern in self.match:
+                track_args.append("--match={}".format(pattern))
+            for pattern in self.exclude:
+                track_args.append("--exclude={}".format(pattern))
+
+            branches = [self.tracking] +  self.track_extra
+
+            # Find new candidate refs from self.tracking branches
+            candidates = dict([self.mirror.latest_commit(
+                       branch, track_tags=self.track_tags, track_args=track_args)
+                       for branch in branches])
+
+            # Find latest candidate ref from all branches
+            # Update self.mirror.ref, node.ref
+            ret = max(candidates, key=candidates.get)
+
+        return ret
+
+    def extra_init_workspace(self, directory):
         self.refresh_submodules()
 
-        with self.timed_activity('Setting up workspace "{}"'.format(directory), silent_nested=True):
-            self.mirror.init_workspace(directory)
-            for mirror in self.submodules:
-                mirror.init_workspace(directory)
+        for mirror in self.submodules:
+            mirror.init_workspace(directory)
 
-    def stage(self, directory):
+    def extra_stage(self, directory):
 
         # Need to refresh submodule list here again, because
         # it's possible that we did not load in the main process
@@ -697,10 +780,8 @@ class GitTagSource(Source):
 
         # Stage the main repo in the specified directory
         #
-        with self.timed_activity("Staging {}".format(self.mirror.url), silent_nested=True):
-            self.mirror.stage(directory)
-            for mirror in self.submodules:
-                mirror.stage(directory)
+        for mirror in self.submodules:
+            mirror.stage(directory)
 
     def get_source_fetchers(self):
         yield self.mirror
@@ -711,10 +792,7 @@ class GitTagSource(Source):
     ###########################################################
     #                     Local Functions                     #
     ###########################################################
-    def have_all_refs(self):
-        if not self.mirror.has_ref():
-            return False
-
+    def have_all_extra_refs(self):
         self.refresh_submodules()
         for mirror in self.submodules:
             if not os.path.exists(mirror.mirror) and not os.path.exists(mirror.fetch_mirror):
