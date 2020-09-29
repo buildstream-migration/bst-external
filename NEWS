@@ -3,6 +3,14 @@ Next Version
 ================
 
 ===================
+bst-external 0.21.0
+===================
+
+o oci: Fix iteration over labels and annotations configuration
+o Fix inconsistent handling of `lfs not specified`
+o git_tag: Fix checking out of workspace when using submodules
+
+===================
 bst-external 0.20.0
 ===================
 
