@@ -1,0 +1,89 @@
+name: PR Checks
+
+# We don't run these jobs on pull requests because:
+# 1. it is often useful to run tests on one's branch without creating a pull
+#    request, and
+# 2. running on both pushes and pull requests results in the classic problem of
+#    having double jobs.
+on: push
+
+# Left to-do:
+# - publishing docs to gh-pages/plugins docs sites
+# - automatically upload to PyPI when a release is tagged
+# - persistent cache
+# - SAST, Code Quality, License Scanning, Coverage
+
+env:
+  CI_IMAGE: buildstream/buildstream:latest-master-107701851
+
+jobs:
+  test:
+    runs-on: ubuntu-20.04
+    continue-on-error: ${{ matrix.allow-failure || false }}
+
+    env:
+      PYTEST_ADDOPTS: "--color=yes"
+
+    strategy:
+      fail-fast: false
+      matrix:
+
+        include:
+          - test-name: linux_backend
+            backend: linux
+            test_command: chown -R buildstream:buildstream . && su buildstream -c 'python3 setup.py test --index-url file:///dev/null'
+          - test-name: unix_backend
+            backend: unix
+            test_command: python3 setup.py test --index-url file:///dev/null
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v2
+        # BuildStream requires tags to be able to find its version.
+        with:
+          fetch-depth: 0
+      # XXX: Our run command looks like a monstrosity because we need to
+      # specify `--device /dev/fuse` and there's no way to do that using the
+      # `container` directive directly.
+      # This is also why we have forward environment variables by hand.
+      # TODO: In future, we should find a way to simplify this. See some
+      # relevant discussion at:
+      # https://github.community/t/how-to-run-privileged-docker-container/16431.
+      # XXX: Value of `volume` and `workdir` must match how GitHub
+      # Actions sets up paths.
+      # TODO: Have test user pre-created in the test image.
+      - name: Prepare
+        run: |
+          # Generate the source distribution tarball
+          python3 setup.py sdist
+          tar -ztf dist/*
+          tarball=$(cd dist && echo $(ls *))
+
+          # unpack tarball as `dist/bst-external` directory
+          cat << EOF > dist/run.sh
+          #!/bin/sh
+          mount
+          df -h
+          useradd -Um buildstream
+          chown -R buildstream:buildstream .
+          dnf install -y quilt qemu git-lfs make
+          pip3 install pytest pytest-{cov,datafiles,env,pep8,xdist} pytoml coverage==4.4.0 pep8 requests twine
+          cd dist && tar -zxf ${tarball} && mv ${tarball%.tar.gz} bst-external
+          cd bst-external && pip3 install --no-index .
+          ${{ matrix.test_command }}
+          EOF
+
+          # Make our script executable
+          chmod +x dist/run.sh
+
+      - name: Run tox inside a container
+        run: |
+          docker run \
+              --privileged \
+              --device /dev/fuse \
+              --env PYTEST_ADDOPTS \
+              --env BST_FORCE_BACKEND=${{ matrix.backend }} \
+              --volume /home/runner/work:/__w \
+              --workdir /__w/bst-external/bst-external \
+              $CI_IMAGE \
+              ./dist/run.sh
