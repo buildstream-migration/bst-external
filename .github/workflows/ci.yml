@@ -87,3 +87,55 @@ jobs:
               --workdir /__w/bst-external/bst-external \
               $CI_IMAGE \
               ./dist/run.sh
+
+  docs:
+    runs-on: ubuntu-20.04
+    env:
+      BST_FORCE_SESSION_REBUILD: 1
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v2
+        # BuildStream requires tags to be able to find its version.
+        with:
+          fetch-depth: 0
+
+      - name: Prepare
+        run: |
+
+          # Generate script to build docs in the docker container
+          cat << EOF > run.sh
+          #!/bin/sh
+          mount
+          df -h
+          useradd -Um buildstream
+          chown -R buildstream:buildstream .
+          dnf install -y quilt qemu git-lfs make
+
+          # Pin sphinx as docs will not build at latest version
+          pip3 install sphinx==1.8.5
+          pip3 install sphinx-click
+          # Pin sphinx_rtd_theme because search functionality breaks
+          # at the latest version
+          pip3 install sphinx_rtd_theme>=0.4.2
+          pip3 install --user .
+          make -C doc
+          EOF
+
+          # Make our script executable
+          chmod +x run.sh
+
+      - name: Run tox inside a container
+        run: |
+          docker run \
+              --privileged \
+              --device /dev/fuse \
+              --volume /home/runner/work:/__w \
+              --workdir /__w/bst-external/bst-external \
+              $CI_IMAGE \
+              ./run.sh
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: docs
+          path: doc/build/html
